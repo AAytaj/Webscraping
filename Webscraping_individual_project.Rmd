@@ -1,0 +1,109 @@
+---
+title: "web_scraping_assignment"
+author: "Aytaj Ahmadova"
+date: "04/12/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+library(rvest)
+library(tidyverse)
+library(data.table)
+library(rvest)
+```
+
+```{r url, eval=TRUE}
+my_page <- 'https://www.bbc.co.uk/search?q=europe'
+t <- read_html(my_page)
+write_html(t, 'bbc.html')
+```
+
+```{r data, eval=TRUE}
+# get titles
+my_titles <- 
+  t %>%
+  html_nodes('.search-results .has_image a')%>%
+  html_text() 
+my_titles <- my_titles[my_titles!=" " & my_titles!="\n"] %>% trimws() %>% na_if("") %>%
+na.omit()
+
+# get category
+my_category <- 
+  t %>%
+  html_nodes('.search-results .has_image .signpost-site')%>%
+  html_text()
+#get summary
+my_summary <- 
+  t %>%
+  html_nodes('.has_image .long')%>%
+  html_text()
+#get date
+#my_date <- 
+  #t %>%
+  #html_nodes('.has_image .display-date')%>%
+  #html_text()
+#my_date <- my_date[my_date!=" " & my_date!="\n"] %>% trimws() 
+```
+
+```{r dataframe, eval=TRUE}
+first_page <- data.frame('title'   = my_titles, 
+                'category' = my_category,
+                'summary'    = my_summary)
+                #'date' = my_date
+```
+
+```{r function, eval=TRUE}
+get_info_of_bbc  <- function(my_page) {
+  
+my_page <- 'https://www.bbc.co.uk/search?q=europe'
+t <- read_html(my_page)
+write_html(t, 'bbc.html')
+
+# get titles
+my_titles <- 
+  t %>%
+  html_nodes('.search-results .has_image a')%>%
+  html_text() 
+my_titles <- my_titles[my_titles!=" " & my_titles!="\n"] %>% trimws() %>% na_if("") %>%
+na.omit()
+
+# get category
+my_category <- 
+  t %>%
+  html_nodes('.search-results .has_image .signpost-site')%>%
+  html_text()
+#get summary
+my_summary <- 
+  t %>%
+  html_nodes('.has_image .long')%>%
+  html_text()
+#get date
+#my_date <- 
+  #t %>%
+  #html_nodes('.has_image .display-date')%>%
+  #html_text()
+
+return(data.frame('title'   = my_titles, 
+                'category' = my_category,
+                'summary'    = my_summary))
+                #'date' = my_date, fill = F
+}
+
+```
+
+```{r, eval=TRUE}
+one_page <- get_info_of_bbc('https://www.bbc.co.uk/search?q=europe#page=1')
+jump_page <- seq(from = 2, to = 23, by = 1)
+my_urls <- paste0('https://www.bbc.co.uk/search?q=europe#page=',jump_page)
+my_urls
+```
+
+```{r, eval=TRUE}
+one_page <- lapply(my_urls, get_info_of_bbc)
+res_df <- rbindlist(one_page)
+res_df
+write.csv(res_df, "BBC_news.csv")
+```
